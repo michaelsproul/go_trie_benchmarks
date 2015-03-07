@@ -3,6 +3,7 @@ package trie_benchmarks
 import (
 	armon "github.com/armon/go-radix"
 	sauerbraten "github.com/sauerbraten/radix"
+	"github.com/tchap/go-patricia/patricia"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -48,6 +49,18 @@ func BenchmarkArmonInsert(b *testing.B) {
 
 		for _, word := range words {
 			r.Insert(word, len(word))
+		}
+	}
+}
+
+func BenchmarkPatriciaInsert(b *testing.B) {
+	words := getText()
+
+	for i := 0; i < b.N; i++ {
+		trie := patricia.NewTrie(patricia.MaxChildrenPerSparseNode(16))
+
+		for _, word := range words {
+			trie.Insert(patricia.Prefix(word), len(word))
 		}
 	}
 }
