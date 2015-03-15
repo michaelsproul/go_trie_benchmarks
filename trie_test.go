@@ -10,6 +10,10 @@ import (
 	"testing"
 )
 
+// Globals.
+var allWords = getText()
+var fullPatriciaTrie = makePatriciaTrie(allWords)
+
 // Get a list of strings from the file pointed to by $TEST_FILE.
 func getText() []string {
 	filename := os.Getenv("TEST_FILE")
@@ -29,38 +33,63 @@ func getText() []string {
 	return words
 }
 
-func BenchmarkSauerbratenInsert(b *testing.B) {
-	words := getText()
+// Make a Patricia Trie filled with the given words.
+func makePatriciaTrie(words []string) *patricia.Trie {
+	trie := patricia.NewTrie(patricia.MaxChildrenPerSparseNode(16))
 
+	for _, word := range words {
+		trie.Insert(patricia.Prefix(word), len(word))
+	}
+
+	return trie;
+}
+
+// Main insert benchmark.
+func BenchmarkPatriciaInsert(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		makePatriciaTrie(allWords)
+	}
+}
+
+// Main get benchmark.
+func BenchmarkPatriciaGet(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		results := make([]int, len(allWords))
+
+		for i, word := range allWords {
+			results[i] = fullPatriciaTrie.Get(patricia.Prefix(word)).(int)
+		}
+	}
+}
+
+// Main remove bencmark.
+func BenchmarkPatriciaInsertRemove(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		trie := makePatriciaTrie(allWords)
+
+		for _, word := range allWords {
+			trie.Delete(patricia.Prefix(word))
+		}
+	}
+}
+
+func BenchmarkSauerbratenInsert(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		r := sauerbraten.New()
 
-		for _, word := range words {
+		for _, word := range allWords {
 			r.Set(word, len(word))
 		}
 	}
 }
 
 func BenchmarkArmonInsert(b *testing.B) {
-	words := getText()
-
 	for i := 0; i < b.N; i++ {
 		r := armon.New()
 
-		for _, word := range words {
+		for _, word := range allWords {
 			r.Insert(word, len(word))
 		}
 	}
 }
 
-func BenchmarkPatriciaInsert(b *testing.B) {
-	words := getText()
-
-	for i := 0; i < b.N; i++ {
-		trie := patricia.NewTrie(patricia.MaxChildrenPerSparseNode(16))
-
-		for _, word := range words {
-			trie.Insert(patricia.Prefix(word), len(word))
-		}
-	}
-}
